@@ -22,6 +22,7 @@ def getAuthorizationToAPI():
 	auth.set_access_token(access_token, access_token_secret)
 	return auth
 
+
 def printSentiment(text):
 	payload = {'text':text}
 	url = 'http://text-processing.com/api/sentiment/'
@@ -45,7 +46,6 @@ def printSentiment(text):
 		pass
 
 
-
 #Generic Class to listen to live tweets
 class TweetListener(tweepy.StreamListener):
     def on_data(self, data):
@@ -56,66 +56,38 @@ class TweetListener(tweepy.StreamListener):
         twitter_handle = decoded['user']['screen_name']
         tweet_text = decoded['text'].encode('ascii', 'ignore')
         count_hashtags(tweet_text)
+        
         print '@%s: %s' % (twitter_handle, tweet_text)
         printSentiment(tweet_text)
         print counter
         print ''
+        
         return True
 
     def on_error(self, status):
         print status
 
 
-def streamTweetsFromLocation(location):
+def stream_tweets_from(location):
 	auth = getAuthorizationToAPI()
 	stream = tweepy.Stream(auth, TweetListener())
 	stream.filter(locations=location)
 
 def main():
 	SanFrancisco = [-122.75,36.8,-121.75,70.8]
-	streamTweetsFromLocation(SanFrancisco)
+	stream_tweets_from(SanFrancisco)
 
 
 ###set up datastore
 d = defaultdict(int)
 counter = Counter()
 
-"""
-def search_for(query, api):
-	results = api.search(q=query, lang='en', rpp=100)
-	data = [r.text.encode('utf8') for r in results]
-
-	for tweet_text in data:
-	    # print tweet_text
-	    count_hashtags(tweet_text)
-
-	print counter
-
-
-# prepend hashtag
-def pp_ht(array_of_words):
-	for i in xrange(0, len(array_of_words)):
-		array_of_words[i] = '#' + array_of_words[i];
-	return array_of_words
-"""
 
 #count hashtagged words
 def count_hashtags(tweet):
 	words = tweet.split()
-
-	#make words valid
 	counter.update(validate(words))
 
-
-"""
-def isValid(word):
-	return isHashtag(word)
-
-def isHashtag(word):
-	if (len(word) > 1):
-		return word[0] == '#'
-	return false
-"""
 
 #validate input for counter
 def validate(words):
@@ -182,7 +154,8 @@ def validate(words):
 	
 	return new_words
 
-#find occurences
+# find occurences
+# returns indices of character in string
 def findOccurences(string, character):
     return [i for i, letter in enumerate(string) if letter == character]
 
