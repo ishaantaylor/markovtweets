@@ -4,6 +4,11 @@ import json
 from collections import defaultdict
 from collections import Counter
 import pprint
+import requests
+
+pos = 0
+neg = 0
+neutral = 0
 
 #Gets the authorization to connect to the twitter API
 def getAuthorizationToAPI():
@@ -17,6 +22,29 @@ def getAuthorizationToAPI():
 	auth.set_access_token(access_token, access_token_secret)
 	return auth
 
+def printSentiment(text):
+	payload = {'text':text}
+	url = 'http://text-processing.com/api/sentiment/'
+	r = requests.post(url, data=payload)
+
+	try:
+		json = r.json()
+		if (json['label'] == 'pos'): 
+			global pos 
+			pos = pos + 1
+		elif (json['label'] == 'neg'): 
+			global neg
+			neg = neg + 1
+		elif (json['label'] == 'neutral'): 
+			global neutral
+			neutral = neutral + 1
+
+		total = pos + neg + neutral
+		print 'Pos: %.2f | Neg: %.2f | Neutral: %.2f   || Total: %s' % (pos / float(total), neg / float(total), neutral / float(total), total)
+	except:
+		pass
+
+
 
 #Generic Class to listen to live tweets
 class TweetListener(tweepy.StreamListener):
@@ -29,7 +57,9 @@ class TweetListener(tweepy.StreamListener):
         tweet_text = decoded['text'].encode('ascii', 'ignore')
         count_hashtags(tweet_text)
         print '@%s: %s' % (twitter_handle, tweet_text)
+        printSentiment(tweet_text)
         print counter
+        print ''
         return True
 
     def on_error(self, status):
@@ -41,7 +71,9 @@ def streamTweetsFromLocation(location):
 	stream = tweepy.Stream(auth, TweetListener())
 	stream.filter(locations=location)
 
-
+def main():
+	SanFrancisco = [-122.75,36.8,-121.75,70.8]
+	streamTweetsFromLocation(SanFrancisco)
 
 
 ###set up datastore
