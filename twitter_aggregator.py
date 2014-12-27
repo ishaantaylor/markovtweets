@@ -5,10 +5,54 @@ from collections import defaultdict
 from collections import Counter
 import pprint
 import requests
+import time
 
 pos = 0
 neg = 0
 neutral = 0
+tweetCount = 0
+
+counter = Counter()
+
+
+#Generic Class to listen to live tweets
+class TweetListener(tweepy.StreamListener):
+    def on_data(self, data):
+        # Twitter returns data in JSON format - we need to decode it first
+        decoded = json.loads(data)
+        global tweetCount
+        tweetCount += 1
+
+       	f = open("runs/" + currentRunsTime + ".txt", 'a')	
+
+
+        # Also, we convert UTF-8 to ASCII ignoring all bad characters sent by users
+        twitter_handle = decoded['user']['screen_name']
+        tweet_text = decoded['text'].encode('ascii', 'ignore')
+        count_hashtags(tweet_text)
+        
+        print(tweetCount)
+        f.write(str(tweetCount) + "\n")
+        print '@%s: %s' % (twitter_handle, tweet_text)
+        f.write(str('@%s: %s' % (twitter_handle, tweet_text) + "\n"))
+
+        printSentiment(tweet_text)
+        #f.write()
+
+        #print counter
+        for k,v in  counter.most_common():
+        	print("('{}':{})".format(k,v)),
+        	f.write(str("('{}':{}) ".format(k,v)))
+
+        print '\n'
+        f.write(str('\n\n'))
+
+
+        return True
+
+    def on_error(self, status):
+        print status
+
 
 #Gets the authorization to connect to the twitter API
 def getAuthorizationToAPI():
@@ -41,46 +85,18 @@ def printSentiment(text):
 			neutral = neutral + 1
 
 		total = pos + neg + neutral
-		print 'Pos: %.2f | Neg: %.2f | Neutral: %.2f   || Total: %s' % (pos / float(total), neg / float(total), neutral / float(total), total)
+		prints = 'Pos: %.2f | Neg: %.2f | Neutral: %.2f   || Total: %s' % (pos / float(total), neg / float(total), neutral / float(total), total)
+		print prints
+		f.write(str(prints + "\n"))
 	except:
+		print "Error"
 		pass
-
-
-#Generic Class to listen to live tweets
-class TweetListener(tweepy.StreamListener):
-    def on_data(self, data):
-        # Twitter returns data in JSON format - we need to decode it first
-        decoded = json.loads(data)
-
-        # Also, we convert UTF-8 to ASCII ignoring all bad characters sent by users
-        twitter_handle = decoded['user']['screen_name']
-        tweet_text = decoded['text'].encode('ascii', 'ignore')
-        count_hashtags(tweet_text)
-        
-        print '@%s: %s' % (twitter_handle, tweet_text)
-        printSentiment(tweet_text)
-        print counter
-        print ''
-        
-        return True
-
-    def on_error(self, status):
-        print status
 
 
 def stream_tweets_from(location):
 	auth = getAuthorizationToAPI()
 	stream = tweepy.Stream(auth, TweetListener())
 	stream.filter(locations=location)
-
-def main():
-	SanFrancisco = [-122.75,36.8,-121.75,70.8]
-	stream_tweets_from(SanFrancisco)
-
-
-###set up datastore
-d = defaultdict(int)
-counter = Counter()
 
 
 #count hashtagged words
@@ -164,8 +180,14 @@ def makeLowercase(word):
 
 
 def main():
-	SanFrancisco = [-122.75,36.8,-121.75,37.8]
-	streamTweetsFromLocation(SanFrancisco)
+	# file that the data is written to
+	timestr = time.strftime("%Y%m%d-%H%M%S")
+	global currentRunsTime
+	currentRunsTime = timestr
+
+
+	SanFrancisco = [-122.75,36.8,-121.75,70.8]
+	stream_tweets_from(SanFrancisco)
 
 
 
