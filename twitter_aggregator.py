@@ -22,7 +22,9 @@ class TweetListener(tweepy.StreamListener):
         decoded = json.loads(data)
 
         # Also, we convert UTF-8 to ASCII ignoring all bad characters sent by users
-        print '@%s: %s' % (decoded['user']['screen_name'], decoded['text'].encode('ascii', 'ignore'))
+        twitter_handle = decoded['user']['screen_name']
+        tweet_text = decoded['text'].encode('ascii', 'ignore')
+        print '@%s: %s' % (twitter_handle, tweet_text)
         print ''
         return True
 
