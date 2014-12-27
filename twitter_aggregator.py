@@ -147,9 +147,9 @@ def validate(words):
 
 	# remove unwanted words
 	new_words = []
-	moods = [ 'love',
+	moods = [ #'love',
 
-			'angry', 'aggravated', 'agitated', 'annoyed', 'anxious', 'appreciative', 'ashamed', 'awe', 'awful', 'amazed', 'amused', 'animosity', 'apprehensive', 'astonished', 'attracted', 'aroused',
+			'angry', 'aggravated', 'agitated', 'annoyed', 'anxious', 'appreciative', 'ashamed', 'awe', 'awful', 'amazed', 'amused', 'animosity', 'apprehensive', 'astonished', 'attracted', 'aroused', 'apathetic',
 			'bitter', 'banal', 'blissful', 'bubbly', 'bittersweet', 'betrayed', 'bewildered', 'bored', 
 			'callous', 'cozy', 'combative', 'conflicted', 'confused', 'content', 'curious', 'cautious', 'comfortable', 'concerned', 'contempt', 'cranky', 'cynical', 
 			'depressed', 'disgusted', 'disturbed', 'driven', 'dynamic', 'discontented', 'devastated', 'disappointed', 'discouraged', 'disheartened', 'distracted', 'distresed', 'dejected', 'delighted', 'delirious',
