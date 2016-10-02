@@ -11,6 +11,10 @@ from collections import Counter
 class TweetListener(tweepy.StreamListener):
     def __init__(self):
         self.counter = Counter()
+        self.two_gram_count = Counter()
+        self.two_gram_follow = dict()
+        self.two_gram_follow_probability = dict()
+
         self.count = 0
         self.sentimentCounts = {"pos": 0, "neg": 0, "neutral": 0}
         self.moods = [
@@ -52,6 +56,7 @@ class TweetListener(tweepy.StreamListener):
         twitter_handle = decoded['user']['screen_name']
         tweet_text = decoded['text'].encode('ascii', 'ignore')
         self.count_hashtags(tweet_text)
+        self.process_two_grams(tweet_text)
         
         print '@%s: %s' % (twitter_handle, tweet_text)
         f.write(str('@%s: %s' % (twitter_handle, tweet_text) + "\n"))
@@ -74,6 +79,98 @@ class TweetListener(tweepy.StreamListener):
     def on_error(self, status):
         print status
 
+
+    # TODO: modify tweets to be as close as possible to a sentence (syntactically)
+    def sentenceify_tweet(self, tweet_text):
+        # parse out newlines, insert periods (?), ignore ngrams which include hashtags, @username, links
+        return tweet_text.lower()
+    
+
+    # TODO: move functions below to wordutil.py as _
+    def process_two_grams(self, tweet_text):
+        tweet_text = self.sentenceify_tweet(tweet_text)
+        print tweet_text
+
+        # TODO: abstract operation in util function
+        hashtags = [ x for x in tweet_text.split(' ') if x.startswith('#') ]
+        addresses = [ x for x in tweet_text.split(' ') if x.startswith('@') ]
+
+        words = [ self.strip_punctuation(w) for w in tweet_text.split(' ') if w not in hashtags and w not in addresses and w ]
+
+        print words
+
+        # Do I need to count this?
+        # self.two_gram_count.update([ tuple([words[i],words[i+1]]) \
+        #     for i in xrange(len(words) - 1) \
+        #     if self.ngram_contains_words(words[i],words[i+1]) \
+        # ])
+
+        for i in xrange(len(words) - 2):
+            two_gram = tuple([words[i],words[i+1]])
+            if not self.two_gram_follow.has_key(two_gram):
+                self.two_gram_follow[two_gram] = []
+
+            # self.two_gram_follow[two_gram] = self.two_gram_follow[two_gram].append(words[i+2])
+            self.upsert_follow_probability_count(two_gram, words[i+2])
+
+        print self.two_gram_follow_probability
+
+
+
+    """ self.two_gram_follow_probability example (to illustrate structure)
+    {
+        tuple1: {
+            probabilities : {
+                word1: 0.4,
+                word2: 0.6
+            },
+            count : 3
+        },
+        tuple2: {
+            probabilities : {
+                word4: 0.2,
+                word3: 0.3,
+                word5: 0.5
+            },
+            count : 8
+        },
+        ...
+    }
+    """
+    def upsert_follow_probability_count(self, two_gram, follow_word):
+
+        if not self.ngram_contains_words(two_gram):
+            return None
+        elif self.two_gram_follow_probability.has_key(two_gram):
+            probability_obj = self.two_gram_follow_probability[two_gram]
+            self.two_gram_follow_probability[two_gram]["probabilities"] = self.new_probabilities(probability_obj["count"], probability_obj["probabilities"], follow_word)
+            self.two_gram_follow_probability[two_gram]["count"] = probability_obj["count"] + 1
+        else:
+            # initialize tuple obj
+            self.two_gram_follow_probability[two_gram] = dict()
+            self.two_gram_follow_probability[two_gram]["count"] = 1
+            self.two_gram_follow_probability[two_gram]["probabilities"] = dict()
+            self.two_gram_follow_probability[two_gram]["probabilities"][follow_word] = 1
+
+
+    # calculate probabilities_dict for current state + new_word
+    def new_probabilities(self, count, probabilities_dict, new_word):
+        new_count = count + 1
+
+        # for each word, update probability with new_count 
+        for k,v in probabilities_dict.iteritems():
+            # is_new_word handles case new_word exists in probabilities_dict
+            is_new_word = 1. if new_word == k else 0.
+            probabilities_dict[k] = ((count * v) + is_new_word) / new_count
+
+        # if word does not exist, initialize it
+        if not probabilities_dict.has_key(new_word):
+            probabilities_dict[new_word] = 1./new_count
+
+        return probabilities_dict
+
+        
+
     def printSentiment(self, text):
         payload = {'text':text}
         url = 'http://text-processing.com/api/sentiment/'
@@ -92,6 +189,15 @@ class TweetListener(tweepy.StreamListener):
             pass
 
 
+    # TODO: validate the 2gram is a viable word
+    def ngram_contains_words(self, ngram):
+        return True
+        # if word1.startswith('http') or word2.startswith('http'):
+            # return False
+        # elif word1 == 'extendhere':
+        #     return False
+        # else:
+        #     return True
 
     def current_time_formatted(self):
         return time.strftime("%Y%m%d-%H%M%S")
