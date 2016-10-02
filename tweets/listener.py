@@ -5,9 +5,9 @@ import requests
 import string
 
 from collections import Counter
+from words.moods import moods
 
-
-#Generic Class to listen to live tweets
+# Generic Class to listen to live tweets
 class TweetListener(tweepy.StreamListener):
     def __init__(self):
         self.counter = Counter()
@@ -17,32 +17,7 @@ class TweetListener(tweepy.StreamListener):
 
         self.count = 0
         self.sentimentCounts = {"pos": 0, "neg": 0, "neutral": 0}
-        self.moods = [
-            'angry', 'aggravated', 'agitated', 'annoyed', 'anxious', 'appreciative', 'ashamed', 'awe', 'awful', 'amazed', 'amused', 'animosity', 'apprehensive', 'astonished', 'attracted', 'aroused', 'apathetic',
-            'bitter', 'banal', 'blissful', 'bubbly', 'bittersweet', 'betrayed', 'bewildered', 'bored', 
-            'callous', 'cozy', 'combative', 'conflicted', 'confused', 'content', 'curious', 'cautious', 'comfortable', 'concerned', 'contempt', 'cranky', 'cynical', 
-            'depressed', 'disgusted', 'disturbed', 'driven', 'dynamic', 'discontented', 'devastated', 'disappointed', 'discouraged', 'disheartened', 'distracted', 'distresed', 'dejected', 'delighted', 'delirious',
-            'elated', 'enraged', 'enthused', 'envious', 'excited', 'exhausted', 'enthusiastic', 'enchanted', 'emptiness', 'embarassed', 'ecstatic', 'eager',
-            'fearful', 'frustrated', 'furious', 'foolish', 'flabbergasted', 'fascinated', 
-            'gentle', 'grateful', 'greedy', 'gratified', 'gleeful', 'gloomy', ''
-            'hate', 'hatred', 'honest', 'hopeful', 'hostile', 'happy',
-            'ignored', 'impartial', 'impulsive', 'inquisitive', 'inspired', 'intolerant', 'irritated', 
-            'jealous', 'joyful', 'jubilant', 'jaded', 
-            'lonely', 'lovely', 'lustful', 'lust', 'loathe', 'loved',
-            'mad', 'malicious', 'meek', 'motivated', 'merry', 'miserable',
-            'nasty', 'naughty', 'negative', 'nervious', 'needy', 
-            'obnoxious', 'obstinate', 'optimistic', 'ouraged', 'offeded', 'obsessed', 
-            'painful', 'patient', 'perky', 'perturbed', 'pessimistic', 'pitiful', 'positive', 'proud', 'playful', 'pleased', 'pleasureful', 'puzzled', 'passionate',
-            'quirky', 
-            'rageful', 'raw', 'relaxed', 'relieved', 'repulsed', 'resentment', 'rude',
-            'sad', 'satisfied', 'scornful', 'sensitive', 'sentimental', 'shameful', 'sorrow', 'spiteful', 'stubborn', 'surprised', 'shy', 'sheepish', 'sexy', 'sensitive', 'sensual', 'scared', 
-            'tempted', 'tense', 'terrified', 'thinking', 'tired', 'troubled', 'thrilled', 'tranquil', 'trusting', 'tormented',
-            'uncertain', 'unhappy', 'upset', 'uneasy', 'uncertain',
-            'volatile', 'violent', 'vindictive', 'vociferous', 'vengeful', 'vicious', 
-            'weary', 'worried', 'wrath', 'worn-out', 'warm'
-            'youthful', 'yearn'
-            'zealous', 'zesty'
-        ]
+        self.moods = moods
 
 
     def on_data(self, data):
@@ -138,19 +113,19 @@ class TweetListener(tweepy.StreamListener):
     }
     """
     def upsert_follow_probability_count(self, two_gram, follow_word):
-
+        # TODO: better verify what we're counting (ngram_contains_words)
         if not self.ngram_contains_words(two_gram):
             return None
-        elif self.two_gram_follow_probability.has_key(two_gram):
-            probability_obj = self.two_gram_follow_probability[two_gram]
-            self.two_gram_follow_probability[two_gram]["probabilities"] = self.new_probabilities(probability_obj["count"], probability_obj["probabilities"], follow_word)
-            self.two_gram_follow_probability[two_gram]["count"] = probability_obj["count"] + 1
-        else:
+        elif not self.two_gram_follow_probability.has_key(two_gram):
             # initialize tuple obj
             self.two_gram_follow_probability[two_gram] = dict()
             self.two_gram_follow_probability[two_gram]["count"] = 1
             self.two_gram_follow_probability[two_gram]["probabilities"] = dict()
             self.two_gram_follow_probability[two_gram]["probabilities"][follow_word] = 1
+        else:
+            probability_obj = self.two_gram_follow_probability[two_gram]
+            self.two_gram_follow_probability[two_gram]["probabilities"] = self.new_probabilities(probability_obj["count"], probability_obj["probabilities"], follow_word)
+            self.two_gram_follow_probability[two_gram]["count"] = probability_obj["count"] + 1
 
 
     # calculate probabilities_dict for current state + new_word
@@ -159,13 +134,13 @@ class TweetListener(tweepy.StreamListener):
 
         # for each word, update probability with new_count 
         for k,v in probabilities_dict.iteritems():
-            # is_new_word handles case new_word exists in probabilities_dict
+            # is_new_word handles case new_word exists in probabilities_dict + makes vals float
             is_new_word = 1. if new_word == k else 0.
             probabilities_dict[k] = ((count * v) + is_new_word) / new_count
 
         # if word does not exist, initialize it
         if not probabilities_dict.has_key(new_word):
-            probabilities_dict[new_word] = 1./new_count
+            probabilities_dict[new_word] = 1. / new_count
 
         return probabilities_dict
 
@@ -217,7 +192,8 @@ class TweetListener(tweepy.StreamListener):
 
 
     def strip_punctuation(self, s):
-        return ''.join(c for c in s if c not in string.punctuation)
+        # chris: this is faster
+        return s.translate(string.maketrans("",""), string.punctuation)
 
     def valid_hashtag(self, word):
         return word[0] == "@" and len(word) > 0
