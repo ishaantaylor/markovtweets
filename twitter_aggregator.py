@@ -1,18 +1,17 @@
 #twitter_aggregator.py
 import re
-# import tweepy
-# import json
-# from collections import defaultdict
-# from collections import Counter
-# import pprint
-# import requests
+import json
+from collections import defaultdict
+from collections import Counter
+import pprint
+import requests
 import time
 import string
 from words.moods import moods
 from tweets.stream import stream_tweets_from
 
 LOCATION = [-122.75,36.8,-121.75,70.8] # San Francisco
-CURRENTTIME
+# CURRENTTIME
 
 counts = {"pos": 0, "neg": 0, "neutral": 0}
 
@@ -23,8 +22,8 @@ tweetCount = 0
 
 counter = Counter()
 
-class SentimentCounter():
-	def __init__(self):
+# class SentimentCounter():
+# 	def __init__(self):
 		
 
 def printSentiment(text):
