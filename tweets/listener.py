@@ -4,7 +4,8 @@ import time
 import requests
 import string
 import random
-import MarkovWalk as mw
+
+from MarkovWalk import MarkovWalk
 
 from collections import Counter
 from words.moods import moods
@@ -38,13 +39,13 @@ class TweetListener(tweepy.StreamListener):
 
         self.process_tweet(tweet_text)
         
-        if (self.count % 10 == 0):
-            # TODO: Chris - getting list index error here
-            walker = mw.MarkovWalk(self.two_gram_follow_probability)
+        # NOTE: only print out something every 10 tweets
+        if self.count % 10 == 0: 
+            walker = MarkovWalk(self.two_gram_follow_probability)
             print walker.generate(random.choice(self.beginnings), 15)
 
         # NOTE: replace this with database ?
-       	# f = open("runs/" + self.current_time_formatted() + ".txt", 'a')	
+        # f = open("runs/" + self.current_time_formatted() + ".txt", 'a')   
         # f.write(str('@%s: %s' % (twitter_handle, tweet_text) + "\n"))
 
         # NOTE: makes call to sentiment API
@@ -79,9 +80,7 @@ class TweetListener(tweepy.StreamListener):
 
     def process_beginning(self, first_word):
         words = tweet_text.split()
-        # TODO: Chris - getting KeyError here
         if len(words) > 3 and self.ngram_contains_words(tuple([words[0], words[1]])):
-            print tuple([words[0], words[1]])
             self.beginnings.append(tuple([words[0], words[1]]))
 
     # TODO: move functions below to wordutil.py as _
@@ -168,9 +167,11 @@ class TweetListener(tweepy.StreamListener):
 
         return probabilities_dict
 
+
     # TODO: calls generator and generates a sentence based on the probabilities
     def walk(num_words):
         return None
+
 
     def printSentiment(self, text):
         payload = {'text':text}
@@ -192,13 +193,15 @@ class TweetListener(tweepy.StreamListener):
 
     # TODO: validate the ngram has viable words
     def ngram_contains_words(self, ngram):
-        return True
-        # if word1.startswith('http') or word2.startswith('http'):
-            # return False
+        word1 = ngram[0]
+        word2 = ngram[1]
+        # extend here
+        if word1.startswith('http') or word2.startswith('http'):
+            return False
         # elif word1 == 'extendhere':
         #     return False
-        # else:
-        #     return True
+        else:
+            return True
 
     def current_time_formatted(self):
         return time.strftime("%Y%m%d-%H%M%S")
