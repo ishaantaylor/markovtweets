@@ -22,13 +22,11 @@ class MarkovWalk():
 		if not self.ngrams.has_key(gram):
 			return None
 		else: 
-			probabilities = self.ngrams[gram]
-			seed = random.randint(0,1)
+			probabilities = self.ngrams[gram]['probabilities']
+			seed = random.uniform(0,1)
 			words = probabilities.keys()
 
-			print gram
-			print probabilities
-
+			# choose word that matches probability calculation
 			for k,v in probabilities.iteritems():
 				if (seed - v < 0):
 					follow_word = k

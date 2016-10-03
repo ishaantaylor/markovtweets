@@ -18,7 +18,6 @@ class TweetListener(tweepy.StreamListener):
         self.two_gram_count = Counter()
         self.two_gram_follow = dict()
         self.two_gram_follow_probability = probabilities
-        print probabilities
 
         self.count = 0
         self.sentimentCounts = {"pos": 0, "neg": 0, "neutral": 0}
@@ -40,8 +39,8 @@ class TweetListener(tweepy.StreamListener):
 
         self.process_tweet(tweet_text)
         
-        # NOTE: only print out something every 10 tweets
-        if self.count % 10 == 0: 
+        # NOTE: only print out something every 25 tweets
+        if self.count % 5 == 0: 
             walker = MarkovWalk(self.two_gram_follow_probability)
             print walker.generate(random.choice(self.beginnings), 15)
 
