@@ -12,12 +12,13 @@ from words.moods import moods
 
 # Generic Class to listen to live tweets
 class TweetListener(tweepy.StreamListener):
-    def __init__(self):
+    def __init__(self, probabilities=dict()):
         self.counter = Counter()
         self.beginnings = []
         self.two_gram_count = Counter()
         self.two_gram_follow = dict()
-        self.two_gram_follow_probability = dict()
+        self.two_gram_follow_probability = probabilities
+        print probabilities
 
         self.count = 0
         self.sentimentCounts = {"pos": 0, "neg": 0, "neutral": 0}
