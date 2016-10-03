@@ -62,6 +62,7 @@ class TweetListener(tweepy.StreamListener):
     
 
     # TODO: move functions below to wordutil.py as _
+    # TODO: eventually modify this to process all ngrams from n = 2 .. m
     def process_two_grams(self, tweet_text):
         tweet_text = self.sentenceify_tweet(tweet_text)
         print tweet_text
@@ -92,40 +93,40 @@ class TweetListener(tweepy.StreamListener):
 
 
 
-    """ self.two_gram_follow_probability example (to illustrate structure)
-    {
-        tuple1: {
-            probabilities : {
-                word1: 0.4,
-                word2: 0.6
+    def upsert_follow_probability_count(self, n_gram, follow_word):
+        """ self.two_gram_follow_probability example (to illustrate structure)
+        {
+            tuple1: {
+                probabilities : {
+                    word1: 0.4,
+                    word2: 0.6
+                },
+                count : 3
             },
-            count : 3
-        },
-        tuple2: {
-            probabilities : {
-                word4: 0.2,
-                word3: 0.3,
-                word5: 0.5
+            tuple2: {
+                probabilities : {
+                    word4: 0.2,
+                    word3: 0.3,
+                    word5: 0.5
+                },
+                count : 8
             },
-            count : 8
-        },
-        ...
-    }
-    """
-    def upsert_follow_probability_count(self, two_gram, follow_word):
+            ...
+        }
+        """
         # TODO: better verify what we're counting (ngram_contains_words)
-        if not self.ngram_contains_words(two_gram):
+        if not self.ngram_contains_words(n_gram):
             return None
-        elif not self.two_gram_follow_probability.has_key(two_gram):
+        elif not self.two_gram_follow_probability.has_key(n_gram):
             # initialize tuple obj
-            self.two_gram_follow_probability[two_gram] = dict()
-            self.two_gram_follow_probability[two_gram]["count"] = 1
-            self.two_gram_follow_probability[two_gram]["probabilities"] = dict()
-            self.two_gram_follow_probability[two_gram]["probabilities"][follow_word] = 1
+            self.two_gram_follow_probability[n_gram] = dict()
+            self.two_gram_follow_probability[n_gram]["count"] = 1
+            self.two_gram_follow_probability[n_gram]["probabilities"] = dict()
+            self.two_gram_follow_probability[n_gram]["probabilities"][follow_word] = 1
         else:
-            probability_obj = self.two_gram_follow_probability[two_gram]
-            self.two_gram_follow_probability[two_gram]["probabilities"] = self.new_probabilities(probability_obj["count"], probability_obj["probabilities"], follow_word)
-            self.two_gram_follow_probability[two_gram]["count"] = probability_obj["count"] + 1
+            probability_obj = self.two_gram_follow_probability[n_gram]
+            self.two_gram_follow_probability[n_gram]["probabilities"] = self.new_probabilities(probability_obj["count"], probability_obj["probabilities"], follow_word)
+            self.two_gram_follow_probability[n_gram]["count"] = probability_obj["count"] + 1
 
 
     # calculate probabilities_dict for current state + new_word
