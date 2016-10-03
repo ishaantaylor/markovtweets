@@ -24,29 +24,31 @@ class TweetListener(tweepy.StreamListener):
         # Twitter returns data in JSON format - we need to decode it first
         decoded = json.loads(data)
 
-       	f = open("runs/" + self.current_time_formatted() + ".txt", 'a')	
-
-
         # Also, we convert UTF-8 to ASCII ignoring all bad characters sent by users
         twitter_handle = decoded['user']['screen_name']
         tweet_text = decoded['text'].encode('ascii', 'ignore')
-        self.count_hashtags(tweet_text)
+        # print '@%s: %s' % (twitter_handle, tweet_text)
+        # NOTE: updates mood counter
+        # self.count_hashtags(tweet_text)
+
         self.process_two_grams(tweet_text)
         
-        print '@%s: %s' % (twitter_handle, tweet_text)
-        f.write(str('@%s: %s' % (twitter_handle, tweet_text) + "\n"))
 
-        # makes call to sentiment API
+        # NOTE: replace this with database
+       	# f = open("runs/" + self.current_time_formatted() + ".txt", 'a')	
+        # f.write(str('@%s: %s' % (twitter_handle, tweet_text) + "\n"))
+
+        # NOTE: makes call to sentiment API
         # self.printSentiment(tweet_text)
         # f.write()
 
-        print self.counter
-        for k,v in  self.counter.most_common():
-        	print("('{}':{})".format(k,v)),
-        	f.write(str("('{}':{}) ".format(k,v)))
-
-        print '\n'
-        f.write(str('\n\n'))
+        # NOTE: prints mood counter
+        # print self.counter
+        # for k,v in  self.counter.most_common():
+        # 	print("('{}':{})".format(k,v)),
+        # 	f.write(str("('{}':{}) ".format(k,v)))
+        # print '\n'
+        # f.write(str('\n\n'))
 
 
         return True
@@ -62,7 +64,7 @@ class TweetListener(tweepy.StreamListener):
     
 
     # TODO: move functions below to wordutil.py as _
-    # TODO: eventually modify this to process all ngrams from n = 2 .. m
+    # TODO: eventually modify this construct to process all ngrams from n = 2 .. m
     def process_two_grams(self, tweet_text):
         tweet_text = self.sentenceify_tweet(tweet_text)
         print tweet_text
@@ -101,7 +103,7 @@ class TweetListener(tweepy.StreamListener):
                     word1: 0.4,
                     word2: 0.6
                 },
-                count : 3
+                count : 10
             },
             tuple2: {
                 probabilities : {
@@ -109,7 +111,7 @@ class TweetListener(tweepy.StreamListener):
                     word3: 0.3,
                     word5: 0.5
                 },
-                count : 8
+                count : 10
             },
             ...
         }
@@ -145,7 +147,9 @@ class TweetListener(tweepy.StreamListener):
 
         return probabilities_dict
 
-        
+    # TODO: calls generator and generates a sentence based on the probabilities
+    def walk(num_words):
+        return None
 
     def printSentiment(self, text):
         payload = {'text':text}
