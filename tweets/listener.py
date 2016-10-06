@@ -5,20 +5,17 @@ import requests
 import string
 import random
 
+from markov import Markov
 from MarkovWalk import MarkovWalk
+
 
 from collections import Counter
 from words.moods import moods
 
 # Generic Class to listen to live tweets
 class TweetListener(tweepy.StreamListener):
-    def __init__(self, probabilities=dict()):
-        self.counter = Counter()
-        self.beginnings = []
-        self.two_gram_count = Counter()
-        self.two_gram_follow = dict()
-        self.two_gram_follow_probability = probabilities
-
+    def __init__(self, markov):
+        self.markov = markov
         self.count = 0
         self.sentimentCounts = {"pos": 0, "neg": 0, "neutral": 0}
         self.moods = moods
@@ -39,159 +36,50 @@ class TweetListener(tweepy.StreamListener):
 
         self.process_tweet(tweet_text)
         
-        # NOTE: only print out something every 25 tweets
-        if self.count % 5 == 0: 
-            walker = MarkovWalk(self.two_gram_follow_probability)
-            generated_text = walker.generate(random.choice(self.beginnings), 15)
-            if len(generated_text.split()) > 2:
-                print generated_text
-
-        # NOTE: replace this with database ?
-        # f = open("runs/" + self.current_time_formatted() + ".txt", 'a')   
-        # f.write(str('@%s: %s' % (twitter_handle, tweet_text) + "\n"))
-
-        # NOTE: makes call to sentiment API
-        # self.printSentiment(tweet_text)
-        # f.write()
-
-        # NOTE: prints mood counter
-        # print self.counter
-        # for k,v in  self.counter.most_common():
-        # 	print("('{}':{})".format(k,v)),
-        # 	f.write(str("('{}':{}) ".format(k,v)))
-        # print '\n'
-        # f.write(str('\n\n'))
-
-
+        # NOTE: only print out something every 5 tweets
+        if self.count % 5 == 0:
+            self.generate_tweet()
         return True
+
+
+    def generate_tweet(self):
+        walker = MarkovWalk(self.markov.two_gram_follow_probability)
+        generated_text = walker.generate(random.choice(self.markov.beginnings), 15)
+        if len(generated_text.split()) > 2:
+            print generated_text
+
 
     def on_error(self, status):
         print status
 
 
-    def process_tweet(self, text):
-        self.process_two_grams(text)
-        self.process_beginning(text)
+    def process_tweet(self, tweet_text):
+        self.markov.process_two_grams(self.get_tweet_text(tweet_text))
+        self.markov.process_beginning(tweet_text)
 
 
-    # TODO: modify tweets to be as close as possible to a sentence (syntactically)
-    def sentenceify_tweet(self, tweet_text):
-        # parse out newlines, insert periods (?), ignore ngrams which include hashtags, @username, links
-        return tweet_text.lower()
-    
+    def get_tweet_text(self, text):
+        return self.get_words(text);
 
-    def process_beginning(self, first_word):
-        words = tweet_text.split()
-        if len(words) > 3 and self.ngram_contains_words(tuple([words[0], words[1]])):
-            self.beginnings.append(tuple([words[0], words[1]]))
 
-    # TODO: move functions below to wordutil.py as _
-    # TODO: eventually modify this construct to process all ngrams from n = 2 .. m
-    def process_two_grams(self, tweet_text):
-        tweet_text = self.sentenceify_tweet(tweet_text)
-        # print tweet_text
-
+    def get_words(self, text):
+        """
+        Get words of tweet_text after sentenceify_tweet, removing hashtags and @ handles
+        """
+        
+        text = self.sentenceify_tweet(text)
+        
         # TODO: abstract operation in util function
         hashtags = [ x for x in tweet_text.split(' ') if x.startswith('#') ]
         addresses = [ x for x in tweet_text.split(' ') if x.startswith('@') ]
-
-        words = [ self.strip_punctuation(w) for w in tweet_text.split(' ') if w not in hashtags and w not in addresses and w ]
-
-        # print words
-
-        # Do I need to count this?
-        # self.two_gram_count.update([ tuple([words[i],words[i+1]]) \
-        #     for i in xrange(len(words) - 1) \
-        #     if self.ngram_contains_words(words[i],words[i+1]) \
-        # ])
-
-        for i in xrange(len(words) - 2):
-            two_gram = tuple([words[i],words[i+1]])
-            if not self.two_gram_follow.has_key(two_gram):
-                self.two_gram_follow[two_gram] = []
-
-            # self.two_gram_follow[two_gram] = self.two_gram_follow[two_gram].append(words[i+2])
-            self.upsert_follow_probability_count(two_gram, words[i+2])
-
-        # print self.two_gram_follow_probability
+        return [ self.strip_punctuation(w) for w in tweet_text.split(' ') if w not in hashtags and w not in addresses and w ]
 
 
-
-    def upsert_follow_probability_count(self, n_gram, follow_word):
-        """ self.two_gram_follow_probability example (to illustrate structure)
-        {
-            tuple1: {
-                probabilities : {
-                    word1: 0.4,
-                    word2: 0.6
-                },
-                count : 10
-            },
-            tuple2: {
-                probabilities : {
-                    word4: 0.2,
-                    word3: 0.3,
-                    word5: 0.5
-                },
-                count : 10
-            },
-            ...
-        }
-        """
-        # TODO: better verify what we're counting (ngram_contains_words)
-        if not self.ngram_contains_words(n_gram):
-            return None
-        elif not self.two_gram_follow_probability.has_key(n_gram):
-            # initialize tuple obj
-            self.two_gram_follow_probability[n_gram] = dict()
-            self.two_gram_follow_probability[n_gram]["count"] = 1
-            self.two_gram_follow_probability[n_gram]["probabilities"] = dict()
-            self.two_gram_follow_probability[n_gram]["probabilities"][follow_word] = 1
-        else:
-            probability_obj = self.two_gram_follow_probability[n_gram]
-            self.two_gram_follow_probability[n_gram]["probabilities"] = self.new_probabilities(probability_obj["count"], probability_obj["probabilities"], follow_word)
-            self.two_gram_follow_probability[n_gram]["count"] = probability_obj["count"] + 1
-
-
-    # calculate probabilities_dict for current state + new_word
-    def new_probabilities(self, count, probabilities_dict, new_word):
-        new_count = count + 1
-
-        # for each word, update probability with new_count 
-        for k,v in probabilities_dict.iteritems():
-            # is_new_word handles case new_word exists in probabilities_dict + makes vals float
-            is_new_word = 1. if new_word == k else 0.
-            probabilities_dict[k] = ((count * v) + is_new_word) / new_count
-
-        # if word does not exist, initialize it
-        if not probabilities_dict.has_key(new_word):
-            probabilities_dict[new_word] = 1. / new_count
-
-        return probabilities_dict
-
-
-    # TODO: calls generator and generates a sentence based on the probabilities
-    def walk(num_words):
-        return None
-
-
-    def printSentiment(self, text):
-        payload = {'text':text}
-        url = 'http://text-processing.com/api/sentiment/'
-        r = requests.post(url, data=payload)
-
-        try:
-            json = r.json()
-            self.sentimentCounts[json['label']] = self.sentimentCounts[json['label']] + 1
-
-            total = self.sentimentCounts['pos'] + self.sentimentCounts['neg'] + self.sentimentCounts['neutral']
-            prints = 'Pos: %.2f | Neg: %.2f | Neutral: %.2f   || Total: %s' % (pos / float(total), neg / float(total), neutral / float(total), total)
-            print prints
-            f.write(str(prints + "\n"))
-        except:
-            print "Error"
-            pass
-
+    # TODO: enhance sentencify tweet such that it modifies tweets to be as close as possible to a sentence (syntactically)
+    def sentenceify_tweet(self, tweet_text):
+        # parse out newlines, insert periods (?), ignore ngrams which include hashtags, @username, links
+        return tweet_text.lower()
+     
 
     # TODO: validate the ngram has viable words
     def ngram_contains_words(self, ngram):
