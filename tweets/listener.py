@@ -5,12 +5,11 @@ import requests
 import string
 import random
 
-from markov import Markov
-from MarkovWalk import MarkovWalk
-
-
 from collections import Counter
 from words.moods import moods
+
+from markov import Markov
+from MarkovWalk import MarkovWalk
 
 # Generic Class to listen to live tweets
 class TweetListener(tweepy.StreamListener):
