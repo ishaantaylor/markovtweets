@@ -1,5 +1,6 @@
 import random
 
+# TODO: merge this module into markov
 class MarkovWalk():
 	def __init__(self, ngrams):
 		self.ngrams = ngrams

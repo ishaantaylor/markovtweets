@@ -41,6 +41,7 @@ class TweetListener(tweepy.StreamListener):
         return True
 
 
+    # TODO: move this function to markov.py
     def generate_tweet(self):
         walker = MarkovWalk(self.markov.two_gram_follow_probability)
         generated_text = walker.generate(random.choice(self.markov.beginnings), 15)
