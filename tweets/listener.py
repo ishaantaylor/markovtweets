@@ -9,7 +9,6 @@ from collections import Counter
 from words.moods import moods
 
 from markov import Markov
-from MarkovWalk import MarkovWalk
 
 # Generic Class to listen to live tweets
 class TweetListener(tweepy.StreamListener):
@@ -37,16 +36,11 @@ class TweetListener(tweepy.StreamListener):
         
         # NOTE: only print out something every 5 tweets
         if self.count % 5 == 0:
-            self.generate_tweet()
+            tweet = self.markov.generate_tweet()
+            if tweet and len(tweet.split()) > 2:
+                print tweet
         return True
 
-
-    # TODO: move this function to markov.py
-    def generate_tweet(self):
-        walker = MarkovWalk(self.markov.two_gram_follow_probability)
-        generated_text = walker.generate(random.choice(self.markov.beginnings), 15)
-        if len(generated_text.split()) > 2:
-            print generated_text
 
 
     def on_error(self, status):

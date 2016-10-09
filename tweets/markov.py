@@ -1,3 +1,5 @@
+import random
+
 class Markov():
 	def __init__(self, probabilities=dict(), beginnings=[]):
 		self.two_gram_follow_probability = probabilities
@@ -82,3 +84,44 @@ class Markov():
 			probabilities_dict[new_word] = 1. / new_count
 
 		return probabilities_dict
+
+
+	def generate_tweet(self, word_limit=30):
+		beginning_twogram = random.choice(self.beginnings)
+		generated_text = self.generate(beginning_twogram, word_limit)
+		if len(generated_text.split()) > 2:
+			return generated_text
+
+
+	def generate(self, beginning_twogram, max_size):
+		if len(beginning_twogram) < 2:
+			raise AttributeError("Beginning two-grams do not exist.")
+		string = beginning_twogram[0] + " " + beginning_twogram[1]
+		ngram = beginning_twogram
+		for i in xrange(max_size):
+			follow_word = self.next_word(ngram) 
+			if follow_word == None:
+				break
+			ngram = tuple([ngram[1],follow_word])
+			string += ' ' + follow_word
+
+		string += '.\n'
+		return string
+
+
+	def next_word(self, gram):
+		if not self.two_gram_follow_probability.has_key(gram):
+			return None
+		else: 
+			probabilities = self.two_gram_follow_probability[gram]['probabilities']
+			seed = random.uniform(0,1)
+			words = probabilities.keys()
+
+			# choose word that matches probability calculation
+			for k,v in probabilities.iteritems():
+				if (seed - v < 0):
+					follow_word = k
+					break
+				seed -= v
+
+			return follow_word
