@@ -16,6 +16,7 @@ class Markov():
 
 	# TODO: move functions below to wordutil.py as _
 	# TODO: eventually modify this construct to process all ngrams from n = 2 .. m
+	# NOTE: functions that assume 2-gram will use two_gram (same for: n-gram:ngram)
 	def process_two_grams(self, words):
 		# Do I need to count this?
 		# self.two_gram_count.update([ tuple([words[i],words[i+1]]) \
@@ -36,7 +37,7 @@ class Markov():
 
 
 
-	def upsert_follow_probability_count(self, n_gram, follow_word):
+	def upsert_follow_probability_count(self, ngram, follow_word):
 		""" self.two_gram_follow_probability example (to illustrate structure)
 		{
 		    tuple1: {
@@ -57,19 +58,19 @@ class Markov():
 		    ...
 		}
 		"""
-		if not self.two_gram_follow_probability.has_key(n_gram):
+		if not self.two_gram_follow_probability.has_key(ngram):
 			# initialize tuple obj
-			self.two_gram_follow_probability[n_gram] = dict()
-			self.two_gram_follow_probability[n_gram]["count"] = 1
-			self.two_gram_follow_probability[n_gram]["probabilities"] = dict()
-			self.two_gram_follow_probability[n_gram]["probabilities"][follow_word] = 1
+			self.two_gram_follow_probability[ngram] = dict()
+			self.two_gram_follow_probability[ngram]["count"] = 1
+			self.two_gram_follow_probability[ngram]["probabilities"] = dict()
+			self.two_gram_follow_probability[ngram]["probabilities"][follow_word] = 1
 		else:
-			probability_obj = self.two_gram_follow_probability[n_gram]
-			self.two_gram_follow_probability[n_gram]["probabilities"] = self.new_probabilities(probability_obj["count"], probability_obj["probabilities"], follow_word)
-			self.two_gram_follow_probability[n_gram]["count"] = probability_obj["count"] + 1
+			probability_obj = self.two_gram_follow_probability[ngram]
+			self.two_gram_follow_probability[ngram]["probabilities"] = self.new_probabilities(probability_obj["count"], probability_obj["probabilities"], follow_word)
+			self.two_gram_follow_probability[ngram]["count"] = probability_obj["count"] + 1
 
 
-	# calculate probabilities_dict for current state + new_word
+	# calculate probabilities_dict for current state + new_word 
 	def new_probabilities(self, count, probabilities_dict, new_word):
 		new_count = count + 1
 
@@ -108,12 +109,12 @@ class Markov():
 		string += '.\n'
 		return string
 
-
-	def next_word(self, gram):
-		if not self.two_gram_follow_probability.has_key(gram):
+	# NOTE: works for n-gram
+	def next_word(self, ngram):
+		if not self.two_gram_follow_probability.has_key(ngram):
 			return None
 		else: 
-			probabilities = self.two_gram_follow_probability[gram]['probabilities']
+			probabilities = self.two_gram_follow_probability[ngram]['probabilities']
 			seed = random.uniform(0,1)
 			words = probabilities.keys()
 
